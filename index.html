@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Holiday Planner</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    /* Calendar container that wraps months responsively */
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .month {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+    .month h3 {
+      margin: 0;
+    }
+    /* Header for day abbreviations */
+    .days-header {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      text-align: center;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .days-header div {
+      padding: 5px;
+      border: 1px solid #ccc;
+      background-color: #eee;
+    }
+    .days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      margin-top: 5px;
+    }
+    .day {
+      border: 1px solid #ccc;
+      padding: 5px;
+      text-align: center;
+      cursor: pointer;
+      background-color: white;
+      /* Prevent text selection */
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    .day.selected {
+      background-color: #aaffaa;
+    }
+    /* Ensure selected days keep the green background on hover */
+    .day.selected:hover {
+      background-color: #aaffaa;
+    }
+    .day:hover {
+      background-color: #f0f0f0;
+    }
+    /* ICS events highlighting: red border (use !important to force override) */
+    .day.event-day {
+      border: 2px solid red !important;
+    }
+    .controls {
+      margin-bottom: 20px;
+    }
+    .ics-input {
+      width: 100%;
+      height: 100px;
+      margin-top: 10px;
+    }
+    .events-list {
+      margin-top: 20px;
+    }
+    .events-list ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    .events-list li {
+      margin-bottom: 10px;
+    }
+    /* Style for the selected days display */
+    #selected-display {
+      font-size: 1.1em;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Main heading -->
+  <h1>Holiday Planner</h1>
+  <!-- Selected days display appears below the heading -->
+  <div id="selected-display"></div>
+
+  <div class="controls">
+    <label for="year-input">Jahr:</label>
+    <input type="number" id="year-input" value="" min="1">
+    <label for="holiday-count">Anzahl der Feiertage:</label>
+    <input type="number" id="holiday-count" value="30" min="0">
+    <button onclick="updateCalendar()">Aktualisieren</button>
+  </div>
+  <div class="calendar" id="calendar"></div>
+  <div>
+    <label for="ics-data">ICS-Daten einfügen:</label>
+    <textarea id="ics-data" class="ics-input"></textarea>
+    <button onclick="parseICS()">ICS-Daten parsen</button>
+  </div>
+  <div class="events-list">
+    <h2>Ereignisse:</h2>
+    <ul id="events"></ul>
+  </div>
+
+  <script>
+    // Abbreviations for days and names for months.
+    const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    const months = [
+      'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+      'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+    ];
+
+    // Use the current year as the default.
+    let year = new Date().getFullYear();
+    document.getElementById('year-input').value = year;
+
+    // Update the title and the main heading to include the year.
+    function updateTitleAndHeading() {
+      document.title = 'Holiday Planner ' + year;
+      document.querySelector('h1').textContent = 'Holiday Planner ' + year;
+    }
+
+    // Call the function once when the page loads.
+    updateTitleAndHeading();
+
+    // A set to hold the ISO date strings of the selected days.
+    let selectedDays = new Set();
+    let events = [];
+
+    // Generate the calendar view for the specified year.
+    function generateCalendar() {
+      const calendar = document.getElementById('calendar');
+      calendar.innerHTML = '';
+
+      months.forEach((month, monthIndex) => {
+        const monthDiv = document.createElement('div');
+        monthDiv.className = 'month';
+        // Display only the month name (without the year).
+        monthDiv.innerHTML = `<h3>${month}</h3>`;
+
+        // Create header with day abbreviations (first letter of each day).
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'days-header';
+        weekdays.forEach(day => {
+          const dayAbbr = document.createElement('div');
+          dayAbbr.textContent = day.charAt(0);
+          headerDiv.appendChild(dayAbbr);
+        });
+        monthDiv.appendChild(headerDiv);
+
+        const daysDiv = document.createElement('div');
+        daysDiv.className = 'days';
+
+        // Calculate the first day of the month (adjusting so Monday is first).
+        let firstDate = new Date(year, monthIndex, 1);
+        let firstDay = firstDate.getDay();
+        firstDay = firstDay === 0 ? 7 : firstDay;
+        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
+        // Add empty cells for days before the first day.
+        for (let i = 1; i < firstDay; i++) {
+          const emptyDay = document.createElement('div');
+          emptyDay.className = 'day';
+          daysDiv.appendChild(emptyDay);
+        }
+
+        // Create cells for each day.
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dayDiv = document.createElement('div');
+          dayDiv.className = 'day';
+          dayDiv.textContent = day;
+          const date = new Date(year, monthIndex, day).toISOString().split('T')[0];
+          dayDiv.setAttribute('data-date', date);
+          // If this day was already selected, mark it.
+          if (selectedDays.has(date)) {
+            dayDiv.classList.add('selected');
+          }
+          dayDiv.addEventListener('click', () => toggleDay(dayDiv, date));
+          daysDiv.appendChild(dayDiv);
+        }
+
+        monthDiv.appendChild(daysDiv);
+        calendar.appendChild(monthDiv);
+      });
+      updateSelectedDays();
+      highlightEvents();
+    }
+
+    // Toggle the selection state when a day is clicked.
+    function toggleDay(dayDiv, date) {
+      if (selectedDays.has(date)) {
+        selectedDays.delete(date);
+        dayDiv.classList.remove('selected');
+      } else {
+        selectedDays.add(date);
+        dayDiv.classList.add('selected');
+      }
+      updateSelectedDays();
+    }
+
+    // Update the display below the heading to show how many days are selected.
+    // If the selected count exceeds the allowed maximum, the text turns red.
+    function updateSelectedDays() {
+      const holidayCount = parseInt(document.getElementById('holiday-count').value, 10) || 0;
+      const selectedCount = selectedDays.size;
+      const display = document.getElementById('selected-display');
+      display.textContent = `(${selectedCount} von ${holidayCount} Tagen ausgewählt)`;
+      display.style.color = selectedCount > holidayCount ? 'red' : 'inherit';
+    }
+
+    // Update the calendar view when the "Aktualisieren" button is pressed.
+    // If the year has changed, clear the selected days; otherwise, preserve them.
+    function updateCalendar() {
+      const newYear = parseInt(document.getElementById('year-input').value, 10);
+      if (!isNaN(newYear) && newYear !== year) {
+        year = newYear;
+        selectedDays.clear();
+      }
+      updateTitleAndHeading();
+      generateCalendar();
+    }
+
+    // --- ICS Parsing Functions ---
+    function parseICS() {
+      const icsData = document.getElementById('ics-data').value;
+      events = [];
+      const lines = icsData.split('\n');
+      let event = null;
+      let inEvent = false;
+      let descriptionBuffer = '';
+
+      lines.forEach(line => {
+        if (line.startsWith('BEGIN:VEVENT')) {
+          event = {};
+          inEvent = true;
+        } else if (line.startsWith('END:VEVENT')) {
+          if (descriptionBuffer) {
+            event.description = descriptionBuffer.trim();
+            descriptionBuffer = '';
+          }
+          events.push(event);
+          event = null;
+          inEvent = false;
+        } else if (inEvent) {
+          if (line.startsWith('DTSTART;VALUE=DATE:')) {
+            let dateStr = line.replace('DTSTART;VALUE=DATE:', '').trim();
+            event.start = formatICSDate(dateStr);
+          } else if (line.startsWith('DTEND;VALUE=DATE:')) {
+            let dateStr = line.replace('DTEND;VALUE=DATE:', '').trim();
+            event.end = formatICSDate(dateStr);
+          } else if (line.startsWith('SUMMARY:')) {
+            event.summary = line.replace('SUMMARY:', '').trim();
+          } else if (line.startsWith('DESCRIPTION:')) {
+            descriptionBuffer += line.replace('DESCRIPTION:', '').trim() + ' ';
+          } else if (line.startsWith(' ') && descriptionBuffer) {
+            descriptionBuffer += line.trim() + ' ';
+          }
+        }
+      });
+      displayEvents();
+      highlightEvents();
+    }
+
+    function displayEvents() {
+      const eventsList = document.getElementById('events');
+      eventsList.innerHTML = '';
+      events.forEach(event => {
+        const li = document.createElement('li');
+        li.textContent = `${event.summary} (${event.start} - ${event.end}): ${event.description || 'Keine Beschreibung'}`;
+        eventsList.appendChild(li);
+      });
+    }
+
+    // Highlight days that fall within any event's date range.
+    function highlightEvents() {
+      // First remove any existing event-day highlights.
+      const days = document.querySelectorAll('.day');
+      days.forEach(day => {
+        day.classList.remove('event-day');
+      });
+      // For each event, add a highlight to each day within its date range.
+      events.forEach(event => {
+        const startDate = new Date(event.start);
+        const endDate = new Date(event.end);
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+          const dateString = d.toISOString().split('T')[0];
+          const dayDiv = document.querySelector(`.day[data-date="${dateString}"]`);
+          if (dayDiv) {
+            dayDiv.classList.add('event-day');
+          }
+        }
+      });
+    }
+
+    function formatICSDate(dateStr) {
+      if (dateStr.length === 8) {
+        return `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+      }
+      return dateStr;
+    }
+
+    // Initialize the calendar view when the page loads.
+    generateCalendar();
+  </script>
+</body>
+</html>
