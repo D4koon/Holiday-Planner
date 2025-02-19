@@ -1,12 +1,11 @@
-# Holiday-Planner
-Holiday Planner
+# [Holiday-Planner](https://d4koon.github.io/Holiday-Planner/)
+[Open online Holiday Planner](https://d4koon.github.io/Holiday-Planner/)
 
 Schulferien im iCal / ics Format:
 https://www.schulferien.org/deutschland/ical/
 
-Features todo:
+Features TODO:
 - Feiertage anzeigen
-  - Berechnen sollte möglich sein (Für Bayern)
+  - Erweitern für weitere Bundesländer / andere Länder
   - Per ical / ics?
 - Kw in der Kalenderansicht
-- 
