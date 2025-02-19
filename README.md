@@ -4,8 +4,3 @@
 Schulferien im iCal / ics Format:
 https://www.schulferien.org/deutschland/ical/
 
-Features TODO:
-- Feiertage anzeigen
-  - Erweitern für weitere Bundesländer / andere Länder
-  - Per ical / ics?
-- Kw in der Kalenderansicht
