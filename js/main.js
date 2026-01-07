@@ -32,6 +32,11 @@ function formatDateLocal(date) {
   return `${d}.${m}`;
 }
 
+// Helper: Format a Date as dd.mm.yyyy.
+function formatDateWithYear(date) {
+  return formatDateLocal(date) + '.' + date.getFullYear();
+}
+
 // Helper: Get ISO week number for a date.
 function getISOWeekNumber(date) {
   const target = new Date(date.valueOf());
@@ -60,7 +65,7 @@ function generateCalendar() {
   months.forEach((month, monthIndex) => {
     const monthDiv = document.createElement('div');
     monthDiv.className = 'month';
-    monthDiv.innerHTML = `<h3>${month}</h3>`;
+    monthDiv.innerHTML = `<h3>${monthIndex + 1}. ${month}</h3>`;
 
     const headerDiv = document.createElement('div');
     headerDiv.className = 'days-header';
@@ -299,7 +304,14 @@ function displayEvents() {
   eventsList.innerHTML = '';
   events.forEach(event => {
     const li = document.createElement('li');
-    li.textContent = `${event.summary} (${event.start} - ${event.end}): ${event.description || 'Keine Beschreibung'}`;
+    // Format dates as dd.mm.yyyy for display
+    const startDate = new Date(event.start);
+    const endDate = new Date(event.end);
+    // Adjust end date by subtracting one day (ICS end dates are exclusive)
+    endDate.setDate(endDate.getDate() - 1);
+    const formattedStart = formatDateWithYear(startDate);
+    const formattedEnd = formatDateWithYear(endDate);
+    li.textContent = `${event.summary} (${formattedStart} - ${formattedEnd}): ${event.description || 'Keine Beschreibung'}`;
     eventsList.appendChild(li);
   });
 }
