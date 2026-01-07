@@ -32,6 +32,14 @@ function formatDateLocal(date) {
   return `${d}.${m}`;
 }
 
+// Helper: Format a Date as dd.mm.yyyy.
+function formatDateWithYear(date) {
+  const d = date.getDate().toString().padStart(2, '0');
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const y = date.getFullYear();
+  return `${d}.${m}.${y}`;
+}
+
 // Update document title and main heading.
 function updateTitleAndHeading() {
   document.title = 'Holiday Planner ' + year;
@@ -257,7 +265,14 @@ function displayEvents() {
   eventsList.innerHTML = '';
   events.forEach(event => {
     const li = document.createElement('li');
-    li.textContent = `${event.summary} (${event.start} - ${event.end}): ${event.description || 'Keine Beschreibung'}`;
+    // Format dates as dd.mm.yyyy for display
+    const startDate = new Date(event.start);
+    const endDate = new Date(event.end);
+    // Adjust end date by subtracting one day (ICS end dates are exclusive)
+    endDate.setDate(endDate.getDate() - 1);
+    const formattedStart = formatDateWithYear(startDate);
+    const formattedEnd = formatDateWithYear(endDate);
+    li.textContent = `${event.summary} (${formattedStart} - ${formattedEnd}): ${event.description || 'Keine Beschreibung'}`;
     eventsList.appendChild(li);
   });
 }
