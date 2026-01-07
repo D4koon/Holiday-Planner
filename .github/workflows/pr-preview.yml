@@ -81,13 +81,86 @@ jobs:
         with:
           ref: gh-pages
 
-      - name: Remove PR preview directory
+      - name: Replace PR preview with info page
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if [ -d "pr-${{ github.event.pull_request.number }}" ]; then
-            git rm -rf "pr-${{ github.event.pull_request.number }}"
-            git commit -m "Remove preview for PR #${{ github.event.pull_request.number }}"
+          
+          PR_DIR="pr-${{ github.event.pull_request.number }}"
+          
+          if [ -d "$PR_DIR" ]; then
+            # Remove all files in the directory but keep the directory
+            rm -rf "$PR_DIR"/*
+            
+            # Create an info/redirect page
+            cat > "$PR_DIR/index.html" << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <meta http-equiv="refresh" content="5;url=../../">
+              <title>PR Preview - Closed</title>
+              <style>
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      min-height: 100vh;
+                      margin: 0;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                  }
+                  .container {
+                      text-align: center;
+                      padding: 2rem;
+                      max-width: 600px;
+                  }
+                  h1 {
+                      font-size: 3rem;
+                      margin: 0 0 1rem 0;
+                  }
+                  p {
+                      font-size: 1.2rem;
+                      line-height: 1.6;
+                      margin: 1rem 0;
+                  }
+                  a {
+                      color: #fff;
+                      text-decoration: underline;
+                      font-weight: bold;
+                  }
+                  .button {
+                      display: inline-block;
+                      margin-top: 2rem;
+                      padding: 1rem 2rem;
+                      background: white;
+                      color: #667eea;
+                      text-decoration: none;
+                      border-radius: 8px;
+                      font-weight: bold;
+                      transition: transform 0.2s;
+                  }
+                  .button:hover {
+                      transform: scale(1.05);
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>🔒 PR Preview Closed</h1>
+                  <p>This PR preview was for <strong>PR #${{ github.event.pull_request.number }}</strong>, which has been closed.</p>
+                  <p>The preview is no longer available.</p>
+                  <p>You will be redirected to the main site in 5 seconds...</p>
+                  <a href="../../" class="button">Go to Main Site Now</a>
+              </div>
+          </body>
+          </html>
+          EOF
+            
+            git add "$PR_DIR/index.html"
+            git commit -m "Replace preview for PR #${{ github.event.pull_request.number }} with info page"
             git push
           else
             echo "Preview directory does not exist, nothing to clean up"
