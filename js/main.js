@@ -32,6 +32,19 @@ function formatDateLocal(date) {
   return `${d}.${m}`;
 }
 
+// Helper: Get ISO week number for a date.
+function getISOWeekNumber(date) {
+  const target = new Date(date.valueOf());
+  const dayNum = (date.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNum + 3);
+  const firstThursday = target.valueOf();
+  target.setMonth(0, 1);
+  if (target.getDay() !== 4) {
+    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+  }
+  return 1 + Math.ceil((firstThursday - target) / 604800000);
+}
+
 // Update document title and main heading.
 function updateTitleAndHeading() {
   document.title = 'Holiday Planner ' + year;
@@ -51,6 +64,11 @@ function generateCalendar() {
 
     const headerDiv = document.createElement('div');
     headerDiv.className = 'days-header';
+    // Add KW header
+    const kwHeader = document.createElement('div');
+    kwHeader.className = 'kw-header';
+    kwHeader.textContent = 'KW';
+    headerDiv.appendChild(kwHeader);
     weekdays.forEach(day => {
       const dayAbbr = document.createElement('div');
       dayAbbr.textContent = day.charAt(0);
@@ -66,13 +84,36 @@ function generateCalendar() {
     firstDay = firstDay === 0 ? 7 : firstDay;
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
 
+    // Track current position in the grid
+    let currentPos = 1;
+    
+    // Add week number for the first week
+    const firstWeekNum = getISOWeekNumber(firstDate);
+    const weekNumDiv = document.createElement('div');
+    weekNumDiv.className = 'week-number';
+    weekNumDiv.textContent = firstWeekNum;
+    daysDiv.appendChild(weekNumDiv);
+    currentPos++;
+
     for (let i = 1; i < firstDay; i++) {
       const emptyDay = document.createElement('div');
       emptyDay.className = 'day';
       daysDiv.appendChild(emptyDay);
+      currentPos++;
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
+      // Add week number at the start of each new week (Monday, position 1 after week number)
+      if (currentPos % 8 === 1 && day > 1) {
+        const dateObj = new Date(year, monthIndex, day);
+        const weekNum = getISOWeekNumber(dateObj);
+        const weekNumDiv = document.createElement('div');
+        weekNumDiv.className = 'week-number';
+        weekNumDiv.textContent = weekNum;
+        daysDiv.appendChild(weekNumDiv);
+        currentPos++;
+      }
+      
       const dayDiv = document.createElement('div');
       dayDiv.className = 'day';
       dayDiv.textContent = day;
@@ -92,6 +133,7 @@ function generateCalendar() {
       }
       dayDiv.addEventListener('click', () => toggleDay(dayDiv, date));
       daysDiv.appendChild(dayDiv);
+      currentPos++;
     }
 
     monthDiv.appendChild(daysDiv);
