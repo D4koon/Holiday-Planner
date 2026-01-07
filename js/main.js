@@ -270,7 +270,7 @@ function highlightEvents() {
   events.forEach(event => {
     const startDate = new Date(event.start);
     const endDate = new Date(event.end);
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
       const dateString = getLocalDateString(d);
       const dayDiv = document.querySelector(`.day[data-date="${dateString}"]`);
       if (dayDiv) {
