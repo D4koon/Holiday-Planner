@@ -34,10 +34,7 @@ function formatDateLocal(date) {
 
 // Helper: Format a Date as dd.mm.yyyy.
 function formatDateWithYear(date) {
-  const d = date.getDate().toString().padStart(2, '0');
-  const m = (date.getMonth() + 1).toString().padStart(2, '0');
-  const y = date.getFullYear();
-  return `${d}.${m}.${y}`;
+  return formatDateLocal(date) + '.' + date.getFullYear();
 }
 
 // Update document title and main heading.
