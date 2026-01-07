@@ -47,7 +47,7 @@ function generateCalendar() {
   months.forEach((month, monthIndex) => {
     const monthDiv = document.createElement('div');
     monthDiv.className = 'month';
-    monthDiv.innerHTML = `<h3>${month}</h3>`;
+    monthDiv.innerHTML = `<h3>${monthIndex + 1}. ${month}</h3>`;
 
     const headerDiv = document.createElement('div');
     headerDiv.className = 'days-header';
