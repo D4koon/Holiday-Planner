@@ -1,71 +1,63 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Holiday Planner</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="5;url=../../">
+    <title>PR Preview - Closed</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 600px;
+        }
+        h1 {
+            font-size: 3rem;
+            margin: 0 0 1rem 0;
+        }
+        p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin: 1rem 0;
+        }
+        a {
+            color: #fff;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        .button {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .button:hover {
+            transform: scale(1.05);
+        }
+    </style>
 </head>
-<body class="dark">
-  <!-- Theme Toggle and Configurator Buttons -->
-  <button id="themeToggle" onclick="toggleTheme()">Light Theme</button>
-  <button id="themeConfigButton" onclick="openThemeConfig()">Theme Config</button>
-  
-  <!-- Theme Configurator Overlay -->
-  <div id="themeConfigurator">
-    <div class="dialog">
-      <h2>Theme Configurator</h2>
-      <label><input type="radio" name="theme" value="dark" checked> Dark Theme</label><br>
-      <label><input type="radio" name="theme" value="light"> Light Theme</label><br><br>
-      <button onclick="applyThemeConfig()">Apply</button>
-      <button onclick="closeThemeConfig()">Close</button>
+<body>
+    <div class="container">
+        <h1>🔒 PR Preview Closed</h1>
+        <p>This PR preview was for <strong>PR #13</strong>, which has been merged.</p>
+        <p>The preview is no longer available.</p>
+        <p>You will be redirected to the main site in 5 seconds...</p>
+        <a href="../../" class="button">Go to Main Site Now</a>
     </div>
-  </div>
-  
-  <!-- Main Content -->
-  <h1>Holiday Planner</h1>
-  <div id="selected-display"></div>
-  
-  <div class="controls">
-    <label for="year-input">Jahr:</label>
-    <input type="number" id="year-input" value="" min="1">
-    <label for="holiday-count">Verfügbare Urlaubstage:</label>
-    <input type="number" id="holiday-count" value="30" min="0">
-    <button onclick="updateCalendar()">Aktualisieren</button>
-    <label for="bavarianHolidaysCheckbox">
-      <input type="checkbox" id="bavarianHolidaysCheckbox" onchange="toggleBavarianHolidays()"> Bayerische Feiertage
-    </label>
-    <label for="hohesFriedensfestCheckbox">
-      <input type="checkbox" id="hohesFriedensfestCheckbox" onchange="toggleHohesFriedensfest()"> Hohes Friedensfest
-    </label>
-  </div>
-  
-  <div class="calendar" id="calendar"></div>
-  
-  <div class="selected-holidays-list">
-    <h2>Ausgewählte Urlaubstage:</h2>
-    <ul id="selected-holidays"></ul>
-  </div>
-  
-  <div>
-    <label for="ics-data">Schulferien-Daten einfügen:</label>
-    <textarea id="ics-data" class="ics-input"></textarea>
-    <button onclick="parseICS()">Schulferien parsen</button>
-  </div>
-  
-  <div class="events-list">
-    <h2>Schulferien:</h2>
-    <ul id="events"></ul>
-  </div>
-  
-  <div class="public-holidays-list">
-    <h2>Bayerische Feiertage:</h2>
-    <ul id="public-holidays"></ul>
-  </div>
-  
-  <!-- Import external scripts -->
-  <script src="js/ics-parser.js"></script>
-  <script src="js/public-holidays.js"></script>
-  <script src="js/main.js"></script>
-  </body>
+</body>
 </html>
