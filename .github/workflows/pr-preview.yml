@@ -87,13 +87,21 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           PR_DIR="pr-${{ github.event.pull_request.number }}"
+          PR_MERGED="${{ github.event.pull_request.merged }}"
           
           if [ -d "$PR_DIR" ]; then
             # Remove all files in the directory but keep the directory
             rm -rf "$PR_DIR"/*
             
+            # Determine status text
+            if [ "$PR_MERGED" = "true" ]; then
+              STATUS_TEXT="merged"
+            else
+              STATUS_TEXT="closed without merging"
+            fi
+            
             # Create an info/redirect page
-            cat > "$PR_DIR/index.html" << 'EOF'
+            cat > "$PR_DIR/index.html" << EOF
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -150,7 +158,7 @@ jobs:
           <body>
               <div class="container">
                   <h1>🔒 PR Preview Closed</h1>
-                  <p>This PR preview was for <strong>PR #${{ github.event.pull_request.number }}</strong>, which has been closed.</p>
+                  <p>This PR preview was for <strong>PR #${{ github.event.pull_request.number }}</strong>, which has been ${STATUS_TEXT}.</p>
                   <p>The preview is no longer available.</p>
                   <p>You will be redirected to the main site in 5 seconds...</p>
                   <a href="../../" class="button">Go to Main Site Now</a>
