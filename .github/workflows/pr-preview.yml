@@ -77,13 +77,14 @@ jobs:
     steps:
       - name: Checkout gh-pages
         uses: actions/checkout@v4
+        continue-on-error: true
         with:
           ref: gh-pages
 
       - name: Remove PR preview directory
         run: |
-          git config user.name github-actions[bot]
-          git config user.email github-actions[bot]@users.noreply.github.com
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           if [ -d "pr-${{ github.event.pull_request.number }}" ]; then
             git rm -rf "pr-${{ github.event.pull_request.number }}"
             git commit -m "Remove preview for PR #${{ github.event.pull_request.number }}"
