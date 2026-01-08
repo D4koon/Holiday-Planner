@@ -16,6 +16,8 @@ Two workflows have been configured:
 - Can also be triggered manually from the Actions tab
 - Preserves PR preview directories (pr-XX folders)
 
+**IMPORTANT:** After merging this PR, you must manually trigger the "Deploy Main Site to GitHub Pages" workflow once from the Actions tab to deploy the main site for the first time. After that, it will run automatically on every push to main.
+
 ### 2. PR Preview Management (`pr-preview.yml`)
 - Creates PR previews in `pr-XX` directories when PRs are opened/updated
 - Replaces preview content with an informative redirect page when PRs are closed
