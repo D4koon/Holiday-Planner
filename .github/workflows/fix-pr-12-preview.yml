@@ -30,7 +30,7 @@ jobs:
           <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <meta http-equiv="refresh" content="5;url=../../">
+              <meta http-equiv="refresh" content="5;url=../">
               <title>PR Preview - Closed</title>
               <style>
                   body {
@@ -84,7 +84,7 @@ jobs:
                   <p>This PR preview was for <strong>PR #12</strong>, which has been closed and merged.</p>
                   <p>The preview is no longer available.</p>
                   <p>You will be redirected to the main site in 5 seconds...</p>
-                  <a href="../../" class="button">Go to Main Site Now</a>
+                  <a href="../" class="button">Go to Main Site Now</a>
               </div>
           </body>
           </html>
