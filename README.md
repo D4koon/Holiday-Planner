@@ -10,5 +10,5 @@ When you open a pull request, a preview of your changes will automatically be de
 
 `https://d4koon.github.io/Holiday-Planner/pr-<number>/`
 
-The preview updates automatically with new commits and is cleaned up when the PR is closed.
+The preview updates automatically with new commits and is cleaned up when the PR is closed. 
 
