@@ -16,6 +16,74 @@ document.getElementById('year-input').value = year;
 let selectedDays = new Set();
 let publicHolidays = {}; // keys: local date string, values: holiday objects
 let events = []; // school holiday events
+let bavariaSchoolHolidaysEnabled = false;
+
+// Hover tooltip state.
+let hoverTooltipEl = null;
+let hoverActiveDayEl = null;
+
+function ensureHoverTooltip() {
+  if (hoverTooltipEl) return hoverTooltipEl;
+  hoverTooltipEl = document.createElement('div');
+  hoverTooltipEl.id = 'day-hover-tooltip';
+  hoverTooltipEl.setAttribute('role', 'tooltip');
+  hoverTooltipEl.style.display = 'none';
+  document.body.appendChild(hoverTooltipEl);
+  return hoverTooltipEl;
+}
+
+function hideDayHoverTooltip() {
+  const el = ensureHoverTooltip();
+  el.style.display = 'none';
+  el.innerHTML = '';
+  if (hoverActiveDayEl) {
+    hoverActiveDayEl.removeAttribute('aria-describedby');
+    hoverActiveDayEl = null;
+  }
+}
+
+function positionDayHoverTooltip(targetEl) {
+  const el = ensureHoverTooltip();
+  const rect = targetEl.getBoundingClientRect();
+  const margin = 10;
+
+  // Place above the day by default.
+  let top = rect.top + window.scrollY - el.offsetHeight - margin;
+  let left = rect.left + window.scrollX + rect.width / 2 - el.offsetWidth / 2;
+
+  // Clamp horizontally to viewport.
+  const minLeft = window.scrollX + 8;
+  const maxLeft = window.scrollX + window.innerWidth - el.offsetWidth - 8;
+  left = Math.max(minLeft, Math.min(left, maxLeft));
+
+  // If off-screen above, place below.
+  const minTop = window.scrollY + 8;
+  if (top < minTop) {
+    top = rect.bottom + window.scrollY + margin;
+  }
+
+  el.style.top = `${top}px`;
+  el.style.left = `${left}px`;
+}
+
+function showDayHoverTooltip(targetEl, htmlContent) {
+  const el = ensureHoverTooltip();
+  el.innerHTML = htmlContent;
+  el.style.display = 'block';
+  // First position after content renders (needs size).
+  positionDayHoverTooltip(targetEl);
+  hoverActiveDayEl = targetEl;
+  targetEl.setAttribute('aria-describedby', el.id);
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
 
 // Helper: Returns a local date string (YYYY-MM-DD) from a Date object.
 function getLocalDateString(date) {
@@ -89,40 +157,40 @@ function generateCalendar() {
     firstDay = firstDay === 0 ? 7 : firstDay;
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
 
-    // Track current position in the grid
-    let currentPos = 1;
-    
     // Add week number for the first week
     const firstWeekNum = getISOWeekNumber(firstDate);
     const weekNumDiv = document.createElement('div');
     weekNumDiv.className = 'week-number';
     weekNumDiv.textContent = firstWeekNum;
     daysDiv.appendChild(weekNumDiv);
-    currentPos++;
 
+    // Add empty cells before the first day of the month.
+    // Important: do NOT use the `.day` class here, otherwise styling/highlighting logic
+    // (and border changes for events/holidays) can affect layout and make numbers look shifted.
     for (let i = 1; i < firstDay; i++) {
-      const emptyDay = document.createElement('div');
-      emptyDay.className = 'day';
-      daysDiv.appendChild(emptyDay);
-      currentPos++;
+      const emptyCell = document.createElement('div');
+      emptyCell.className = 'empty-day';
+      daysDiv.appendChild(emptyCell);
     }
 
+    // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      // Add week number at the start of each new week (Monday, position 1 after week number)
-      if (currentPos % 8 === 1 && day > 1) {
-        const dateObj = new Date(year, monthIndex, day);
+      const dateObj = new Date(year, monthIndex, day);
+      const dayOfWeek = dateObj.getDay();
+      const dayOfWeekMon = dayOfWeek === 0 ? 7 : dayOfWeek; // Convert to Monday = 1, Sunday = 7
+
+      // Add week number at the start of each new week (Monday)
+      if (dayOfWeekMon === 1 && day > 1) {
         const weekNum = getISOWeekNumber(dateObj);
         const weekNumDiv = document.createElement('div');
         weekNumDiv.className = 'week-number';
         weekNumDiv.textContent = weekNum;
         daysDiv.appendChild(weekNumDiv);
-        currentPos++;
       }
-      
+
       const dayDiv = document.createElement('div');
       dayDiv.className = 'day';
       dayDiv.textContent = day;
-      const dateObj = new Date(year, monthIndex, day);
       const date = getLocalDateString(dateObj);
       dayDiv.setAttribute('data-date', date);
       if (selectedDays.has(date)) {
@@ -132,13 +200,25 @@ function generateCalendar() {
         dayDiv.classList.add('public-holiday');
       }
       // Mark weekend days (Saturday = 6, Sunday = 0).
-      const dayOfWeek = dateObj.getDay();
       if (dayOfWeek === 0 || dayOfWeek === 6) {
         dayDiv.classList.add('weekend');
       }
       dayDiv.addEventListener('click', () => toggleDay(dayDiv, date));
+
+      dayDiv.addEventListener('mouseenter', () => {
+        const html = buildDayInfoTooltipHtml(date);
+        if (html) showDayHoverTooltip(dayDiv, html);
+      });
+      dayDiv.addEventListener('mousemove', () => {
+        if (hoverTooltipEl && hoverTooltipEl.style.display === 'block') {
+          positionDayHoverTooltip(dayDiv);
+        }
+      });
+      dayDiv.addEventListener('mouseleave', () => {
+        if (hoverActiveDayEl === dayDiv) hideDayHoverTooltip();
+      });
+
       daysDiv.appendChild(dayDiv);
-      currentPos++;
     }
 
     monthDiv.appendChild(daysDiv);
@@ -148,6 +228,54 @@ function generateCalendar() {
   highlightEvents();
   displayPublicHolidays();
   displaySelectedHolidayBlocks();
+}
+
+function eventCoversLocalDate(event, isoDate) {
+  const startDate = new Date(event.start);
+  const endDateExclusive = new Date(event.end);
+  for (let d = new Date(startDate); d < endDateExclusive; d.setDate(d.getDate() + 1)) {
+    if (getLocalDateString(d) === isoDate) return true;
+  }
+  return false;
+}
+
+function buildDayInfoTooltipHtml(isoDate) {
+  const sections = [];
+
+  const holiday = publicHolidays[isoDate];
+  if (holiday) {
+    const title = escapeHtml(holiday.name || 'Feiertag');
+    const desc = escapeHtml(holiday.description || '');
+    const region = escapeHtml(holiday.region || '');
+    const metaParts = [desc, region ? `Region: ${region}` : ''].filter(Boolean);
+    sections.push(
+      `<div class="tip-section">
+         <div class="tip-title">Feiertag</div>
+         <div class="tip-line"><strong>${title}</strong>${metaParts.length ? ` – ${metaParts.join(' · ')}` : ''}</div>
+       </div>`
+    );
+  }
+
+  const matchingEvents = events.filter(ev => eventCoversLocalDate(ev, isoDate));
+  if (matchingEvents.length) {
+    const lines = matchingEvents
+      .map(ev => {
+        const summary = escapeHtml(ev.summary || 'Schulferien');
+        const desc = ev.description ? ` – ${escapeHtml(ev.description)}` : '';
+        return `<div class="tip-line"><strong>${summary}</strong>${desc}</div>`;
+      })
+      .join('');
+
+    sections.push(
+      `<div class="tip-section">
+         <div class="tip-title">Schulferien</div>
+         ${lines}
+       </div>`
+    );
+  }
+
+  if (!sections.length) return '';
+  return `<div class="tip-date">${escapeHtml(isoDate)}</div>${sections.join('')}`;
 }
 
 // Toggle the selection state when a day is clicked.
@@ -194,7 +322,7 @@ function displaySelectedHolidayBlocks() {
     }
     groups.push(currentGroup);
   }
-  
+
   const items = groups.map(group => {
     if (group.length === 1) {
       let d = new Date(group[0]);
@@ -205,7 +333,7 @@ function displaySelectedHolidayBlocks() {
       return `${formatDateLocal(d1)} - ${formatDateLocal(d2)}`;
     }
   });
-  
+
   ul.innerHTML = '';
   items.forEach(item => {
     const li = document.createElement('li');
@@ -223,9 +351,48 @@ function updateCalendar() {
     publicHolidays = {};
     document.getElementById("bavarianHolidaysCheckbox").checked = false;
     document.getElementById("hohesFriedensfestCheckbox").checked = false;
+    const schoolCb = document.getElementById("bavariaSchoolHolidaysCheckbox");
+    if (schoolCb) schoolCb.checked = false;
+    bavariaSchoolHolidaysEnabled = false;
+    events = [];
   }
   updateTitleAndHeading();
   generateCalendar();
+}
+
+async function loadBavariaSchoolHolidays() {
+  const response = await fetch('data/school_holidays/bavaria_holidays_2024_2030.ical', { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Failed to load ICS (${response.status})`);
+  }
+  const icsText = await response.text();
+  events = parseICSData(icsText);
+  displayEvents();
+  highlightEvents();
+}
+
+async function toggleBavariaSchoolHolidays() {
+  const checkBox = document.getElementById('bavariaSchoolHolidaysCheckbox');
+  bavariaSchoolHolidaysEnabled = !!(checkBox && checkBox.checked);
+
+  if (!bavariaSchoolHolidaysEnabled) {
+    events = [];
+    displayEvents();
+    highlightEvents();
+    return;
+  }
+
+  try {
+    await loadBavariaSchoolHolidays();
+  } catch (err) {
+    events = [];
+    displayEvents();
+    highlightEvents();
+    if (checkBox) checkBox.checked = false;
+    bavariaSchoolHolidaysEnabled = false;
+    alert('Konnte die Schulferien-Datei nicht laden. Bitte über einen lokalen Server öffnen (nicht als file://).');
+    console.error(err);
+  }
 }
 
 // Add Bavarian public holidays by calling the external function from public-holidays.js.
@@ -233,15 +400,15 @@ function addBavarianHolidays() {
   // Preserve any existing "Hohes Friedensfest" entry.
   const hfIso = getLocalDateString(new Date(year, 7, 8));
   let hfHoliday = publicHolidays[hfIso] || null;
-  
+
   // calculateBavarianHolidays is defined in js/public-holidays.js.
   let newHolidays = calculateBavarianHolidays(year, getLocalDateString);
-  
+
   // Preserve the optional "Hohes Friedensfest" if it exists.
   if (hfHoliday) {
     newHolidays[hfIso] = hfHoliday;
   }
-  
+
   publicHolidays = newHolidays;
   generateCalendar();
 }

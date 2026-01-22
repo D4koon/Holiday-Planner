@@ -3,128 +3,328 @@ body {
     font-family: Arial, sans-serif;
     margin: 20px;
     transition: background-color 0.3s, color 0.3s;
+  --public-holiday-accent: #ffd400;
+  --school-holiday-accent: #ff3b30;
+  --hohes-friedensfest-accent: #7c4dff;
   }
-  
+
   /* Calendar */
   .calendar {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, 360px);
     gap: 10px;
     margin-bottom: 20px;
+    justify-content: start;
   }
-  
+
   .month {
     border: 1px solid;
     padding: 10px;
     text-align: center;
     transition: background-color 0.3s, border-color 0.3s;
+    overflow-x: hidden;
   }
-  
+
+  .month h3 {
+    text-align: center;
+  }
+
+  .days-header,
+  .days {
+    justify-content: center;
+  }
+
   .month h3 {
     margin: 0;
   }
-  
+
   /* Days Header */
   .days-header {
     display: grid;
-    grid-template-columns: 40px repeat(7, 1fr);
+    grid-template-columns: 40px repeat(7, 36px);
     gap: 5px;
     text-align: center;
     font-weight: bold;
     margin-top: 10px;
+    grid-auto-rows: 32px;
   }
-  
+
   .days-header div {
     padding: 5px;
     border: 1px solid;
     transition: background-color 0.3s, border-color 0.3s;
-  }
-  
-  .days-header .kw-header {
-    font-size: 0.9em;
+    box-sizing: border-box;
+    min-height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
-  
+
+  .days-header .kw-header {
+    font-size: 0.9em;
+  }
+
   /* Days */
   .days {
     display: grid;
-    grid-template-columns: 40px repeat(7, 1fr);
+    grid-template-columns: 40px repeat(7, 36px);
     gap: 5px;
     margin-top: 5px;
+    grid-auto-rows: 32px;
   }
-  
+
   .week-number {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     font-size: 0.9em;
     font-weight: bold;
-    padding: 5px;
     text-align: center;
     user-select: none;
     transition: background-color 0.3s, color 0.3s;
-  }
-  
-  .day {
+    box-sizing: border-box;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border: 1px solid;
     padding: 5px;
+  }
+
+  .day,
+  .empty-day,
+  .days-header div {
+    box-sizing: border-box;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid;
+    padding: 5px;
+  }
+
+  .day {
     text-align: center;
     cursor: pointer;
     user-select: none;
     transition: background-color 0.3s, border-color 0.3s;
   }
-  
+
   .day.selected {
     background-color: #66bb6a;
   }
-  
+
   /* Ensure selected days are visible in both themes */
   body.dark .day.selected,
   body.light .day.selected {
     background-color: #66bb6a !important;
   }
-  
+
   .day.selected:hover {
     background-color: #66bb6a;
   }
-  
+
   .day:hover {
     background-color: #e0e0e0;
   }
-  
+
   /* Weekend styling */
   .day.weekend {
     /* Additional weekend styling will be applied in the theme sections */
   }
-  
+
   /* ICS (Schulferien) and Public Holiday styling */
   .day.event-day {
-    border: 2px solid red !important;
+    outline: 2px solid var(--school-holiday-accent) !important;
+    outline-offset: -2px;
   }
   .day.public-holiday {
-    border: 2px solid yellow !important;
+    outline: 2px solid var(--public-holiday-accent) !important;
+    outline-offset: -2px;
   }
   .day.public-holiday.event-day {
-    border: 2px solid red !important;
-    outline: 2px solid yellow !important;
+    outline: 2px solid var(--school-holiday-accent) !important;
+    outline-offset: -2px;
+    box-shadow: inset 0 0 0 2px var(--public-holiday-accent);
   }
-  
+
+  /* Day hover tooltip */
+  #day-hover-tooltip {
+    position: absolute;
+    z-index: 3000;
+    display: none;
+    max-width: 280px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    font-size: 0.95em;
+    line-height: 1.25;
+    pointer-events: none;
+    backdrop-filter: blur(2px);
+  }
+  #day-hover-tooltip .tip-date {
+    font-size: 0.85em;
+    opacity: 0.85;
+    margin-bottom: 6px;
+  }
+  #day-hover-tooltip .tip-section + .tip-section {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed;
+  }
+  #day-hover-tooltip .tip-title {
+    font-size: 0.8em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.9;
+    margin-bottom: 4px;
+  }
+  #day-hover-tooltip .tip-line {
+    margin: 2px 0;
+  }
+
+  /* Bavaria school holidays toggle label */
+  .school-holidays-label {
+    color: var(--school-holiday-accent);
+  }
+
+  .public-holidays-label {
+    color: var(--public-holiday-accent);
+  }
+
+  .hohes-friedensfest-label {
+    color: var(--public-holiday-accent);
+  }
+
   /* Controls */
   .controls {
-    margin-bottom: 20px;
+    margin-bottom: 8px;
   }
   .controls label,
   .controls button {
     margin-left: 5px;
+  }
+
+  .checkbox-row {
+    display: block;
+    margin-top: 10px;
+  }
+
+  .checkbox-row .checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 0;
+    margin-right: 12px;
+    white-space: nowrap;
+    --toggle-accent: currentColor;
+  }
+
+  .checkbox-row .checkbox-label input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 1px;
+    height: 1px;
+  }
+
+  .checkbox-row .checkbox-text {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    background-color: transparent;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.1s;
+    user-select: none;
+  }
+
+  .checkbox-row .checkbox-text::before {
+    content: "";
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    background-color: transparent;
+    flex: 0 0 18px;
+    box-sizing: border-box;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+
+  .checkbox-row .checkbox-text::after {
+    content: "✓";
+    position: absolute;
+    left: 16px;
+    font-size: 0.9em;
+    font-weight: 800;
+    color: #111;
+    opacity: 0;
+    transform: scale(0.7);
+    transition: opacity 0.2s, transform 0.2s, color 0.2s;
+  }
+
+  .checkbox-row .checkbox-label input:focus-visible ~ .checkbox-text {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  .checkbox-row .checkbox-label input:checked ~ .checkbox-text {
+    background-color: color-mix(in srgb, var(--toggle-accent) 25%, transparent);
+    color: var(--toggle-accent);
+    border-color: var(--toggle-accent);
+    box-shadow: 0 0 0 2px var(--toggle-accent), 0 6px 14px rgba(0, 0, 0, 0.25);
+    transform: translateY(-1px);
+  }
+
+  .checkbox-row .checkbox-label input:checked ~ .checkbox-text::before {
+    background-color: var(--toggle-accent);
+    border-color: var(--toggle-accent);
+  }
+
+  .checkbox-row .checkbox-label input:checked ~ .checkbox-text::after {
+    opacity: 1;
+    transform: scale(1);
+    color: #111;
+  }
+
+  body.light .checkbox-row .checkbox-label input:checked ~ .checkbox-text::after {
+    color: #fff;
+  }
+
+  .checkbox-row .checkbox-label:has(input:checked) .checkbox-text {
+    background-color: color-mix(in srgb, var(--toggle-accent) 25%, transparent);
+    color: var(--toggle-accent);
+    border-color: var(--toggle-accent);
+    box-shadow: 0 0 0 2px var(--toggle-accent), 0 6px 14px rgba(0, 0, 0, 0.25);
+    transform: translateY(-1px);
+  }
+
+  .checkbox-row .checkbox-label:has(input:checked) .checkbox-text::before {
+    background-color: var(--toggle-accent);
+    border-color: var(--toggle-accent);
+  }
+
+  .checkbox-row .checkbox-label:has(input:checked) .checkbox-text::after {
+    opacity: 1;
+    transform: scale(1);
+    color: #111;
+  }
+
+  body.light .checkbox-row .checkbox-label:has(input:checked) .checkbox-text::after {
+    color: #fff;
+  }
+
+  .checkbox-row .checkbox-label input:not(:checked) ~ .checkbox-text:hover {
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.12);
   }
   .ics-input {
     width: 100%;
     height: 100px;
     margin-top: 10px;
   }
-  
+
   /* Lists */
   .events-list,
   .public-holidays-list,
@@ -144,9 +344,10 @@ body {
   }
   #selected-display {
     font-size: 1.1em;
-    margin-bottom: 20px;
+    margin-top: 8px;
+    margin-bottom: 10px;
   }
-  
+
   /* Toggle buttons */
   #themeToggle {
     position: fixed;
@@ -164,7 +365,7 @@ body {
     cursor: pointer;
     z-index: 1000;
   }
-  
+
   /* Theme Configurator Overlay */
   #themeConfigurator {
     display: none;
@@ -188,7 +389,7 @@ body {
     background-color: #333;
     color: #e0e0e0;
   }
-  
+
   /* Dark Theme (default) */
   body.dark {
     background-color: #121212;
@@ -208,6 +409,10 @@ body {
     border-color: #555;
     color: #e0e0e0;
   }
+  body.dark .empty-day {
+    background-color: #2a2a2a;
+    border-color: #555;
+  }
   body.dark .day:hover {
     background-color: #3a3a3a;
   }
@@ -216,8 +421,18 @@ body {
   }
   body.dark .week-number {
     color: #888;
+    border-color: #555;
   }
-  
+
+  body.dark #day-hover-tooltip {
+    background-color: rgba(30, 30, 30, 0.98);
+    color: #e0e0e0;
+    border-color: #555;
+  }
+  body.dark #day-hover-tooltip .tip-section + .tip-section {
+    border-top-color: rgba(255, 255, 255, 0.18);
+  }
+
   /* Light Theme */
   body.light {
     background-color: #ffffff;
@@ -237,6 +452,18 @@ body {
     border-color: #ccc;
     color: #000;
   }
+  body.light #day-hover-tooltip {
+    background-color: rgba(255, 255, 255, 0.98);
+    color: #111;
+    border-color: #ccc;
+  }
+  body.light #day-hover-tooltip .tip-section + .tip-section {
+    border-top-color: rgba(0, 0, 0, 0.2);
+  }
+  body.light .empty-day {
+    background-color: #fff;
+    border-color: #ccc;
+  }
   body.light .day:hover {
     background-color: #f0f0f0;
   }
@@ -245,5 +472,5 @@ body {
   }
   body.light .week-number {
     color: #666;
+    border-color: #ccc;
   }
-  
