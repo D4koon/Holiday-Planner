@@ -14,13 +14,16 @@ document.getElementById('year-input').value = year;
 
 // Global variables.
 let selectedDays = new Set();
+let selectedDaysByYear = {};
 let publicHolidays = {}; // keys: local date string, values: holiday objects
 let events = []; // school holiday events
 let bavariaSchoolHolidaysEnabled = false;
+const SELECTED_DAYS_STORAGE_KEY = 'holidayPlanner.selectedDays';
 
 // Hover tooltip state.
 let hoverTooltipEl = null;
 let hoverActiveDayEl = null;
+let clearSelectedDialogTriggerEl = null;
 
 function ensureHoverTooltip() {
   if (hoverTooltipEl) return hoverTooltipEl;
@@ -103,6 +106,78 @@ function formatDateLocal(date) {
 // Helper: Format a Date as dd.mm.yyyy.
 function formatDateWithYear(date) {
   return formatDateLocal(date) + '.' + date.getFullYear();
+}
+
+function saveSelectedDays() {
+  try {
+    selectedDaysByYear[String(year)] = Array.from(selectedDays)
+      .filter(value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value))
+      .sort();
+    localStorage.setItem(SELECTED_DAYS_STORAGE_KEY, JSON.stringify(selectedDaysByYear));
+  } catch (error) {
+    console.warn('Could not persist selected holidays.', error);
+  }
+}
+
+function applySelectedDaysForCurrentYear() {
+  const currentYearEntries = selectedDaysByYear[String(year)] || [];
+  selectedDays = new Set(currentYearEntries);
+}
+
+function loadSelectedDays() {
+  try {
+    const raw = localStorage.getItem(SELECTED_DAYS_STORAGE_KEY);
+    if (!raw) {
+      selectedDaysByYear = {};
+      selectedDays = new Set();
+      return;
+    }
+
+    const parsed = JSON.parse(raw);
+
+    // Legacy format support: persisted as a flat array.
+    if (Array.isArray(parsed)) {
+      const migrated = {};
+      parsed
+        .filter(value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value))
+        .forEach(date => {
+          const dateYear = date.slice(0, 4);
+          if (!migrated[dateYear]) migrated[dateYear] = [];
+          migrated[dateYear].push(date);
+        });
+
+      Object.keys(migrated).forEach(y => {
+        migrated[y].sort();
+      });
+
+      selectedDaysByYear = migrated;
+      applySelectedDaysForCurrentYear();
+      saveSelectedDays();
+      return;
+    }
+
+    if (parsed && typeof parsed === 'object') {
+      const normalized = {};
+      Object.keys(parsed).forEach(yearKey => {
+        const entries = parsed[yearKey];
+        if (!Array.isArray(entries)) return;
+        normalized[yearKey] = entries
+          .filter(value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value))
+          .sort();
+      });
+
+      selectedDaysByYear = normalized;
+      applySelectedDaysForCurrentYear();
+      return;
+    }
+
+    selectedDaysByYear = {};
+    selectedDays = new Set();
+  } catch (error) {
+    console.warn('Could not load persisted selected holidays.', error);
+    selectedDaysByYear = {};
+    selectedDays = new Set();
+  }
 }
 
 // Helper: Get ISO week number for a date.
@@ -287,6 +362,7 @@ function toggleDay(dayDiv, date) {
     selectedDays.add(date);
     dayDiv.classList.add('selected');
   }
+  saveSelectedDays();
   updateSelectedDays();
   displaySelectedHolidayBlocks();
 }
@@ -342,12 +418,13 @@ function displaySelectedHolidayBlocks() {
   });
 }
 
-// Update calendar view when "Aktualisieren" is pressed.
+// Re-render calendar state after control changes.
 function updateCalendar() {
   const newYear = parseInt(document.getElementById('year-input').value, 10);
   if (!isNaN(newYear) && newYear !== year) {
+    saveSelectedDays();
     year = newYear;
-    selectedDays.clear();
+    applySelectedDaysForCurrentYear();
     publicHolidays = {};
     document.getElementById("bavarianHolidaysCheckbox").checked = false;
     document.getElementById("hohesFriedensfestCheckbox").checked = false;
@@ -358,6 +435,277 @@ function updateCalendar() {
   }
   updateTitleAndHeading();
   generateCalendar();
+}
+
+function openClearSelectedConfirm() {
+  clearSelectedDialogTriggerEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const overlay = document.getElementById('clearSelectedConfirmOverlay');
+  overlay.style.display = 'flex';
+  const cancelButton = document.getElementById('cancel-clear-selected-button');
+  if (cancelButton) {
+    cancelButton.focus();
+  }
+}
+
+function closeClearSelectedConfirm() {
+  document.getElementById('clearSelectedConfirmOverlay').style.display = 'none';
+  if (clearSelectedDialogTriggerEl && typeof clearSelectedDialogTriggerEl.focus === 'function') {
+    clearSelectedDialogTriggerEl.focus();
+  }
+  clearSelectedDialogTriggerEl = null;
+}
+
+function confirmClearSelectedHolidaysCurrentYear() {
+  closeClearSelectedConfirm();
+  clearSelectedHolidaysCurrentYear();
+}
+
+function setupClearSelectedConfirmInteractions() {
+  const overlay = document.getElementById('clearSelectedConfirmOverlay');
+  if (!overlay) return;
+
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) {
+      closeClearSelectedConfirm();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && overlay.style.display === 'flex') {
+      closeClearSelectedConfirm();
+    }
+  });
+}
+
+function clearSelectedHolidaysCurrentYear() {
+  const currentYearPrefix = `${year}-`;
+  Array.from(selectedDays).forEach(date => {
+    if (date.startsWith(currentYearPrefix)) {
+      selectedDays.delete(date);
+    }
+  });
+  saveSelectedDays();
+  generateCalendar();
+}
+
+function exportSelectedHolidaysAsCal() {
+  const selectedCurrentYearDays = Array.from(selectedDays)
+    .filter(date => date.startsWith(`${year}-`))
+    .sort();
+
+  if (!selectedCurrentYearDays.length) {
+    alert(`Keine ausgewählten Urlaubstage im Jahr ${year} zum Exportieren.`);
+    return;
+  }
+
+  const now = new Date();
+  const dtStamp = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}${String(now.getUTCDate()).padStart(2, '0')}T${String(now.getUTCHours()).padStart(2, '0')}${String(now.getUTCMinutes()).padStart(2, '0')}${String(now.getUTCSeconds()).padStart(2, '0')}Z`;
+
+  const eventsContent = selectedCurrentYearDays.map(isoDate => {
+    const [y, m, d] = isoDate.split('-').map(value => parseInt(value, 10));
+    const endDate = new Date(y, m - 1, d);
+    endDate.setDate(endDate.getDate() + 1);
+    const dtEnd = `${endDate.getFullYear()}${String(endDate.getMonth() + 1).padStart(2, '0')}${String(endDate.getDate()).padStart(2, '0')}`;
+    const dtStart = `${String(y).padStart(4, '0')}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}`;
+    const uid = `${isoDate}-holiday-planner@local`;
+
+    return [
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `DTSTAMP:${dtStamp}`,
+      `DTSTART;VALUE=DATE:${dtStart}`,
+      `DTEND;VALUE=DATE:${dtEnd}`,
+      'SUMMARY:Urlaub',
+      'END:VEVENT'
+    ].join('\r\n');
+  }).join('\r\n');
+
+  const calContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Holiday Planner//EN',
+    'CALSCALE:GREGORIAN',
+    eventsContent,
+    'END:VCALENDAR'
+  ].join('\r\n');
+
+  const blob = new Blob([calContent], { type: 'text/calendar;charset=utf-8' });
+  const downloadUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = `holiday-planner-${year}.cal`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(downloadUrl);
+}
+
+function triggerCalImport() {
+  const input = document.getElementById('import-cal-input');
+  if (!input) return;
+  input.click();
+}
+
+function unfoldCalLines(calText) {
+  const rawLines = calText.replace(/\r/g, '').split('\n');
+  const unfolded = [];
+
+  rawLines.forEach(rawLine => {
+    if (!rawLine) return;
+    if ((rawLine.startsWith(' ') || rawLine.startsWith('\t')) && unfolded.length) {
+      unfolded[unfolded.length - 1] += rawLine.slice(1);
+      return;
+    }
+    unfolded.push(rawLine);
+  });
+
+  return unfolded;
+}
+
+function parseCalValueToIsoDate(value) {
+  if (!value) return null;
+  const clean = value.trim();
+  const match = clean.match(/^(\d{4})(\d{2})(\d{2})/);
+  if (!match) return null;
+  return `${match[1]}-${match[2]}-${match[3]}`;
+}
+
+function isoDateToLocalDate(isoDate) {
+  const [y, m, d] = isoDate.split('-').map(v => parseInt(v, 10));
+  return new Date(y, m - 1, d);
+}
+
+function importDatesToSelection(importedIsoDates) {
+  importedIsoDates.forEach(isoDate => {
+    const yearKey = isoDate.slice(0, 4);
+    if (!selectedDaysByYear[yearKey]) {
+      selectedDaysByYear[yearKey] = [];
+    }
+    if (!selectedDaysByYear[yearKey].includes(isoDate)) {
+      selectedDaysByYear[yearKey].push(isoDate);
+    }
+  });
+
+  Object.keys(selectedDaysByYear).forEach(yearKey => {
+    selectedDaysByYear[yearKey].sort();
+  });
+}
+
+function extractHolidayDatesFromCal(calText) {
+  const lines = unfoldCalLines(calText);
+  const importedDates = new Set();
+  let inEvent = false;
+  let startIso = null;
+  let endIsoExclusive = null;
+
+  lines.forEach(line => {
+    if (line === 'BEGIN:VEVENT') {
+      inEvent = true;
+      startIso = null;
+      endIsoExclusive = null;
+      return;
+    }
+
+    if (line === 'END:VEVENT') {
+      if (startIso) {
+        const startDate = isoDateToLocalDate(startIso);
+        const endDateExclusive = endIsoExclusive ? isoDateToLocalDate(endIsoExclusive) : null;
+
+        if (endDateExclusive && endDateExclusive > startDate) {
+          for (let dateCursor = new Date(startDate); dateCursor < endDateExclusive; dateCursor.setDate(dateCursor.getDate() + 1)) {
+            importedDates.add(getLocalDateString(dateCursor));
+          }
+        } else {
+          importedDates.add(startIso);
+        }
+      }
+
+      inEvent = false;
+      startIso = null;
+      endIsoExclusive = null;
+      return;
+    }
+
+    if (!inEvent) return;
+
+    if (line.startsWith('DTSTART')) {
+      const value = line.split(':').slice(1).join(':');
+      startIso = parseCalValueToIsoDate(value);
+      return;
+    }
+
+    if (line.startsWith('DTEND')) {
+      const value = line.split(':').slice(1).join(':');
+      endIsoExclusive = parseCalValueToIsoDate(value);
+    }
+  });
+
+  return Array.from(importedDates).sort();
+}
+
+async function importSelectedHolidaysFromCal(event) {
+  const fileInput = event && event.target ? event.target : null;
+  const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+  if (!file) return;
+
+  try {
+    const calText = await file.text();
+    const importedDates = extractHolidayDatesFromCal(calText);
+
+    if (!importedDates.length) {
+      alert('Keine importierbaren Urlaubstage in der .cal-Datei gefunden.');
+      return;
+    }
+
+    importDatesToSelection(importedDates);
+    applySelectedDaysForCurrentYear();
+    saveSelectedDays();
+    generateCalendar();
+
+    const importedCurrentYearCount = importedDates.filter(date => date.startsWith(`${year}-`)).length;
+    alert(`${importedDates.length} Urlaubstag(e) importiert (${importedCurrentYearCount} im aktuellen Jahr ${year}).`);
+  } catch (error) {
+    console.error('Failed to import .cal file:', error);
+    alert('Die .cal-Datei konnte nicht importiert werden.');
+  } finally {
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  }
+}
+
+let yearInputDebounceTimer = null;
+
+function setupImmediateControlUpdates() {
+  const yearInput = document.getElementById('year-input');
+  const holidayCountInput = document.getElementById('holiday-count');
+
+  if (yearInput) {
+    yearInput.addEventListener('input', () => {
+      if (yearInput.value === '' || yearInput.validity.badInput) {
+        return;
+      }
+      if (yearInputDebounceTimer) {
+        clearTimeout(yearInputDebounceTimer);
+      }
+      yearInputDebounceTimer = setTimeout(() => {
+        updateCalendar();
+      }, 250);
+    });
+
+    yearInput.addEventListener('change', () => {
+      if (yearInputDebounceTimer) {
+        clearTimeout(yearInputDebounceTimer);
+        yearInputDebounceTimer = null;
+      }
+      updateCalendar();
+    });
+  }
+
+  if (holidayCountInput) {
+    holidayCountInput.addEventListener('input', updateSelectedDays);
+    holidayCountInput.addEventListener('change', updateSelectedDays);
+  }
 }
 
 async function loadBavariaSchoolHolidays() {
@@ -545,4 +893,7 @@ function applyThemeConfig() {
 }
 
 // Initialize the calendar view.
+loadSelectedDays();
+setupImmediateControlUpdates();
+setupClearSelectedConfirmInteractions();
 generateCalendar();

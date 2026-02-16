@@ -22,15 +22,29 @@
     </div>
   </div>
 
+  <div id="clearSelectedConfirmOverlay">
+    <div class="dialog">
+      <h2>Urlaubstage löschen</h2>
+      <p>Alle ausgewählten Urlaubstage im aktuellen Jahr wirklich löschen?</p>
+      <div class="dialog-actions">
+        <button id="cancel-clear-selected-button" onclick="closeClearSelectedConfirm()">Abbrechen</button>
+        <button id="confirm-clear-selected-button" onclick="confirmClearSelectedHolidaysCurrentYear()">Löschen</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Content -->
   <h1>Holiday Planner</h1>
 
   <div class="controls">
-    <label for="year-input">Jahr:</label>
-    <input type="number" id="year-input" value="" min="1">
-    <label for="holiday-count">Verfügbare Urlaubstage:</label>
-    <input type="number" id="holiday-count" value="30" min="0">
-    <button onclick="updateCalendar()">Aktualisieren</button>
+    <div class="year-selector">
+      <label for="year-input">Jahr</label>
+      <input type="number" id="year-input" value="" min="1">
+    </div>
+    <div class="holiday-selector">
+      <label for="holiday-count">Urlaubstage</label>
+      <input type="number" id="holiday-count" value="30" min="0">
+    </div>
     <div class="checkbox-row">
       <label for="bavarianHolidaysCheckbox" class="checkbox-label public-holidays-label">
         <input type="checkbox" id="bavarianHolidaysCheckbox" onchange="toggleBavarianHolidays()">
@@ -45,6 +59,10 @@
         <span class="checkbox-text">Bayerische Schulferien bis 2030</span>
       </label>
     </div>
+    <button id="export-cal-button" onclick="exportSelectedHolidaysAsCal()">Auswahl als .cal exportieren</button>
+    <button id="import-cal-button" onclick="triggerCalImport()">Aus .cal importieren</button>
+    <input type="file" id="import-cal-input" accept=".cal,text/calendar" onchange="importSelectedHolidaysFromCal(event)" hidden>
+    <button id="clear-selected-button" onclick="openClearSelectedConfirm()">Alle Urlaubstage löschen</button>
     <div id="selected-display"></div>
   </div>
 
