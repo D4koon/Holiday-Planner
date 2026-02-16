@@ -197,14 +197,83 @@ body {
   /* Controls */
   .controls {
     margin-bottom: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
   }
   .controls label,
   .controls button {
-    margin-left: 5px;
+    margin-left: 0;
+  }
+
+  .year-selector,
+  .holiday-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid;
+    border-radius: 999px;
+    transition: background-color 0.3s, border-color 0.3s, box-shadow 0.2s;
+  }
+
+  .year-selector label,
+  .holiday-selector label {
+    margin: 0;
+    font-size: 0.9em;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    opacity: 0.9;
+  }
+
+  #year-input,
+  #holiday-count {
+    width: 92px;
+    border: 1px solid;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.95em;
+    font-weight: 600;
+    text-align: center;
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.3s, color 0.3s;
+    appearance: auto;
+    -webkit-appearance: auto;
+    -moz-appearance: auto;
+  }
+
+  #year-input:focus {
+    outline: none;
+  }
+
+  #holiday-count:focus {
+    outline: none;
+  }
+
+  #year-input:focus-visible,
+  #holiday-count:focus-visible {
+    box-shadow: 0 0 0 2px #66bb6a;
+  }
+
+  #year-input::-webkit-outer-spin-button,
+  #holiday-count::-webkit-outer-spin-button,
+  #year-input::-webkit-inner-spin-button {
+    margin: 0;
+    opacity: 1;
+    height: 1.5em;
+    width: 1.1em;
+  }
+
+  #holiday-count::-webkit-inner-spin-button {
+    margin: 0;
+    opacity: 1;
+    height: 1.5em;
+    width: 1.1em;
   }
 
   .checkbox-row {
     display: block;
+    flex-basis: 100%;
     margin-top: 10px;
   }
 
@@ -213,7 +282,7 @@ body {
     align-items: center;
     gap: 6px;
     margin-left: 0;
-    margin-right: 12px;
+    margin-right: 10px;
     white-space: nowrap;
     --toggle-accent: currentColor;
   }
@@ -230,11 +299,12 @@ body {
     position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
+    gap: 5px;
+    padding: 5px 10px;
     border-radius: 999px;
     border: 1px solid currentColor;
     background-color: transparent;
+    font-size: 0.92em;
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.1s;
@@ -243,12 +313,12 @@ body {
 
   .checkbox-row .checkbox-text::before {
     content: "";
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     border: 1px solid currentColor;
     background-color: transparent;
-    flex: 0 0 18px;
+    flex: 0 0 16px;
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s;
   }
@@ -256,8 +326,8 @@ body {
   .checkbox-row .checkbox-text::after {
     content: "✓";
     position: absolute;
-    left: 16px;
-    font-size: 0.9em;
+    left: 14px;
+    font-size: 0.82em;
     font-weight: 800;
     color: #111;
     opacity: 0;
@@ -348,6 +418,57 @@ body {
     margin-bottom: 10px;
   }
 
+  #clear-selected-button,
+  #export-cal-button,
+  #import-cal-button {
+    border: 1px solid #bfc5cc;
+    color: #1f2328;
+    background-color: #f3f5f7;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.92em;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 1px 0 rgba(31, 35, 40, 0.04);
+    transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.06s;
+  }
+
+  #clear-selected-button:hover,
+  #export-cal-button:hover,
+  #import-cal-button:hover {
+    background-color: #ffffff;
+    border-color: #aeb5bd;
+  }
+
+  #clear-selected-button:focus-visible,
+  #export-cal-button:focus-visible,
+  #import-cal-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #9aa6b2;
+  }
+
+  #clear-selected-button:active,
+  #export-cal-button:active,
+  #import-cal-button:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 2px rgba(31, 35, 40, 0.12);
+  }
+
+  body.dark #clear-selected-button,
+  body.dark #export-cal-button,
+  body.dark #import-cal-button {
+    background-color: #eceff2;
+    color: #1b1f23;
+    border-color: #c7cdd4;
+  }
+
+  body.dark #clear-selected-button:hover,
+  body.dark #export-cal-button:hover,
+  body.dark #import-cal-button:hover {
+    background-color: #ffffff;
+    border-color: #b7bec6;
+  }
+
   /* Toggle buttons */
   #themeToggle {
     position: fixed;
@@ -379,6 +500,63 @@ body {
     align-items: center;
     justify-content: center;
   }
+
+  #clearSelectedConfirmOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 2100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #clearSelectedConfirmOverlay .dialog {
+    background-color: #fff;
+    color: #111;
+    padding: 18px;
+    border-radius: 8px;
+    min-width: 320px;
+    max-width: 420px;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+  }
+
+  #clearSelectedConfirmOverlay .dialog h2 {
+    margin: 0 0 8px;
+    font-size: 1.1em;
+  }
+
+  #clearSelectedConfirmOverlay .dialog p {
+    margin: 0 0 14px;
+    line-height: 1.35;
+  }
+
+  #clearSelectedConfirmOverlay .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  #confirm-clear-selected-button {
+    border: 1px solid #c26a6a;
+    background-color: #fff4f4;
+    color: #7f1d1d;
+  }
+
+  body.dark #clearSelectedConfirmOverlay .dialog {
+    background-color: #333;
+    color: #e0e0e0;
+  }
+
+  body.dark #confirm-clear-selected-button {
+    border-color: #d18a8a;
+    background-color: #4a2a2a;
+    color: #ffd9d9;
+  }
+
   #themeConfigurator .dialog {
     background-color: #fff;
     padding: 20px;
@@ -422,6 +600,24 @@ body {
   body.dark .week-number {
     color: #888;
     border-color: #555;
+  }
+
+  body.dark .year-selector,
+  body.dark .holiday-selector {
+    background-color: #1e1e1e;
+    border-color: #555;
+  }
+
+  body.dark #year-input,
+  body.dark #holiday-count {
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+    border-color: #666;
+  }
+
+  body.dark #year-input:hover,
+  body.dark #holiday-count:hover {
+    background-color: #303030;
   }
 
   body.dark #day-hover-tooltip {
@@ -473,4 +669,22 @@ body {
   body.light .week-number {
     color: #666;
     border-color: #ccc;
+  }
+
+  body.light .year-selector,
+  body.light .holiday-selector {
+    background-color: #f7f7f7;
+    border-color: #ccc;
+  }
+
+  body.light #year-input,
+  body.light #holiday-count {
+    background-color: #fff;
+    color: #000;
+    border-color: #bbb;
+  }
+
+  body.light #year-input:hover,
+  body.light #holiday-count:hover {
+    background-color: #fafafa;
   }
